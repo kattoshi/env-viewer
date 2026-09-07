@@ -1,8 +1,10 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 import { subDays, subHours, subMonths, subYears } from 'date-fns';
+import { timer } from 'rxjs';
 import { HistoryService } from './services/history.service';
 import { movingAverageByDays, TimePoint } from './utils/moving-average';
 import {
@@ -20,6 +22,7 @@ import {
   templateUrl: './app.html',
 })
 export class App {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly historyService = inject(HistoryService);
 
   protected readonly title = signal('env-viewer');
@@ -64,6 +67,9 @@ export class App {
     () => this.resourceOptions.find((r) => r.kind === this.selectedResourceKind())!
   );
 
+  /**
+    * 選択変更時の取得処理と定期更新を初期化する。
+   */
   constructor() {
     // 期間変更時は既定の移動平均日数へリセットする
     effect(() => {
@@ -80,8 +86,28 @@ export class App {
       this.selectedMovingAverageDays();
       this.load();
     });
+
+    const refreshIntervalMilliseconds = 10 * 60 * 1000;
+    const nextRefreshAt = new Date();
+    nextRefreshAt.setMinutes(Math.floor(nextRefreshAt.getMinutes() / 10) * 10);
+    nextRefreshAt.setSeconds(30, 0);
+    if (nextRefreshAt.getTime() <= Date.now()) {
+      nextRefreshAt.setMinutes(nextRefreshAt.getMinutes() + 10);
+    }
+
+    timer(nextRefreshAt.getTime() - Date.now(), refreshIntervalMilliseconds)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        const periodKind = this.selectedPeriodKind();
+        if (periodKind === '24h' || periodKind === '7d') {
+          this.load();
+        }
+      });
   }
 
+  /**
+    * 選択中の期間・リソースの履歴データを取得する。
+   */
   private load(): void {
     const period = this.selectedPeriod();
     const end = new Date();
@@ -104,6 +130,9 @@ export class App {
     });
   }
 
+  /**
+    * 指定期間の開始日時を計算する。
+   */
   private computeStart(kind: PeriodKind, end: Date): Date {
     switch (kind) {
       case '24h':
@@ -119,6 +148,9 @@ export class App {
     }
   }
 
+  /**
+    * APIレスポンスを選択条件に合わせてグラフデータへ変換する。
+   */
   private applyResponse(
     period: PeriodOption,
     values: HistoryValue[],
@@ -177,6 +209,9 @@ export class App {
     });
   }
 
+  /**
+    * 期間に応じたグラフ横軸の時間単位を返す。
+   */
   private timeUnitFor(kind: PeriodKind): 'hour' | 'day' | 'month' {
     switch (kind) {
       case '24h':
@@ -188,6 +223,9 @@ export class App {
     }
   }
 
+  /**
+    * 期間に応じたグラフ横軸ラベルの書式を返す。
+   */
   private tickFormatFor(kind: PeriodKind): string {
     switch (kind) {
       case '24h':
