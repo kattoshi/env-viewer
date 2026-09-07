@@ -1,0 +1,57 @@
+<main class="env-viewer">
+  <header>
+    <h1>{{ title() }}</h1>
+    <p class="subtitle">温度・湿度・気圧 履歴モニター</p>
+  </header>
+
+  <section class="controls">
+    <label>
+      期間
+      <select
+        [value]="selectedPeriodKind()"
+        (change)="selectedPeriodKind.set($any($event.target).value)"
+      >
+        @for (opt of periodOptions; track opt.kind) {
+          <option [value]="opt.kind">{{ opt.label }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      リソース
+      <select
+        [value]="selectedResourceKind()"
+        (change)="selectedResourceKind.set($any($event.target).value)"
+      >
+        @for (opt of resourceOptions; track opt.kind) {
+          <option [value]="opt.kind">{{ opt.label }}</option>
+        }
+      </select>
+    </label>
+
+    @if ((selectedPeriod().movingAverageDaysOptions?.length ?? 0) > 1) {
+      <label>
+        移動平均
+        <select
+          [value]="selectedMovingAverageDays()"
+          (change)="selectedMovingAverageDays.set(+$any($event.target).value)"
+        >
+          @for (days of selectedPeriod().movingAverageDaysOptions; track days) {
+            <option [value]="days">{{ days }}日間</option>
+          }
+        </select>
+      </label>
+    }
+  </section>
+
+  @if (loading()) {
+    <p class="status">読み込み中...</p>
+  }
+  @if (error()) {
+    <p class="status error">{{ error() }}</p>
+  }
+
+  <section class="chart-container">
+    <canvas baseChart [type]="'line'" [data]="chartData()" [options]="chartOptions()"></canvas>
+  </section>
+</main>
