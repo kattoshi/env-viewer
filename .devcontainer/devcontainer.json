@@ -8,7 +8,10 @@
   "workspaceFolder": "/workspace",
   "remoteUser": "root",
   // テスト時、ホスト名を解決できるようにする
-  "runArgs": ["--add-host=env-monitor.local:192.168.100.105"],
+  "runArgs": [
+    "--add-host=env-monitor.local:192.168.100.105",
+    "--add-host=env-measure.local:192.168.100.232"
+  ],
   "forwardPorts": [4200],
   "portsAttributes": {
     "4200": {

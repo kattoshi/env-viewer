@@ -56,3 +56,67 @@ header {
   height: 420px;
   width: 100%;
 }
+
+.current-values {
+  margin-top: 1.5rem;
+
+  h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.1rem;
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin: 0;
+  }
+}
+
+.current-value {
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid #d9dce5;
+  border-radius: 0.5rem;
+  background: #f8f9fc;
+
+  dt {
+    color: #666;
+    font-size: 0.875rem;
+  }
+
+  dd {
+    margin: 0.25rem 0 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+    white-space: nowrap;
+
+    span {
+      color: #666;
+      font-size: 0.875rem;
+      font-weight: 400;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .current-values dl {
+    gap: 0.25rem;
+  }
+
+  .current-value {
+    padding: 0.5rem;
+
+    dt {
+      font-size: 0.75rem;
+    }
+
+    dd {
+      font-size: 1rem;
+
+      span {
+        font-size: 0.7rem;
+      }
+    }
+  }
+}

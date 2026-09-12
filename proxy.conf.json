@@ -4,5 +4,11 @@
         "secure": false,
         "changeOrigin": true,
         "logLevel": "debug"
+    },
+    "/current": {
+        "target": "http://env-measure.local",
+        "secure": false,
+        "changeOrigin": true,
+        "logLevel": "debug"
     }
 }

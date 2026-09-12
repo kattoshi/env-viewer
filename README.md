@@ -1,77 +1,140 @@
-# 温度、湿度、気圧を見える化する SPA
+# 環境モニターSPA
 
-- プロジェクト名は、env-viewer として、 このREADME.md のフォルダーへ以下の開発環境でプロジェクトを作成する
-  - フレームワークは、最新の Angular
-  - nodeのバージョンは最新
-  - SPA
-  - 使用している開発環境の独立性を高めるため、開発コンテナーの中で開発を行う
-  - 開発コードは、githubにて管理する(現段階では未作成)
-    - user.email = urabe@mcomp.co.jp
-    - user.name = kattoshi
+温度、湿度、気圧の履歴と現在値を表示するAngular製のSPAです。
 
-- リソース取得元
-  - http://env-monitor.local サーバーをアクセスしてデーターを取得する
-  - 仕様書は、https://github.com/kattoshi/env-logger/blob/main/readme.md の /api/history を利用する
+## 概要
 
-- UI仕様
-  - 画面上に折れ線グラフで、気温、湿度、気圧の履歴や比較を表示する
-  - 履歴表示
-    - 履歴選択期間は以下の通り
-      以下をプルダウンメニューなどで選択する
-      - 過去24H
-        mode=0で取得
-        全ての計測データをプロット
-      - 過去7日
-        mode=0で取得
-        全ての計測データをプロット
-      - 過去1ヶ月
-        mode=1で取得(毎時0分)
-        1日間移動平均で表示
-      - 過去3ヶ月
-        mode=1で取得(毎時0分)
-        7日間移動平均で表示
-      - 過去1年
-        mode=1で取得(毎時0分)。
-        7日間移動平均、30日間移動平均のグラフを選択可能
-    - 表示する計測リソース
-      以下をプルダウンメニューなどで選択する
-      - 気温
-      - 湿度
-      - 気圧
-    - グラフの横軸は、日付または時刻
-      - 過去24H
-        hh:mm
-      - 過去7日
-        mm/dd hh:mm
-      - 過去1ヶ月
-        mm/dd
-      - 過去3ヶ月
-        mm/dd
-      - 過去1年
-        mm/dd
-  - 比較
-    - 仕様検討中。後日実装
+- プロジェクト名: `env-viewer`
+- フレームワーク: Angular 22
+- 実行環境: Node.js、npm
+- 開発環境: Dev Container
+- グラフ: Chart.js、ng2-charts
+- 日付計算: date-fns
+- テスト: Vitest
 
-## 開発コマンド (Angular CLI)
+## API
 
-このプロジェクトは [Angular CLI](https://github.com/angular/angular-cli) (v22.1.7) で生成されています。
+履歴データと現在値は、次のAPIから取得します。
 
-### 開発サーバー起動
+### 履歴API
+
+履歴APIは環境モニターサーバーの `/api/history` を利用します。
+
+```text
+GET /api/history?start={開始日時}&end={終了日時}&mode={モード}
+```
+
+開発時は、Angularの開発サーバーから `http://env-monitor.local` へプロキシします。
+
+### 現在値API
+
+現在値は環境計測端末の `/current` を利用します。
+
+```text
+GET /current
+```
+
+レスポンス形式:
+
+```json
+{
+  "temp": 25.3,
+  "pressure": 1013.2,
+  "humidity": 60.2,
+  "cpu_temp": 42.1
+}
+```
+
+開発時は、Angularの開発サーバーから `http://env-measure.local` へプロキシします。
+プロキシ設定は [proxy.conf.json](proxy.conf.json) にあります。
+
+## 画面仕様
+
+### 履歴グラフ
+
+選択した期間とリソースに応じて、折れ線グラフを表示します。
+
+| 期間       | APIモード | 表示内容                               |
+| ---------- | --------: | -------------------------------------- |
+| 過去24時間 |       `0` | 全計測データ                           |
+| 過去7日    |       `0` | 全計測データ                           |
+| 過去1ヶ月  |       `1` | 毎時0分の値、1日間移動平均             |
+| 過去3ヶ月  |       `1` | 毎時0分の値、7日間移動平均             |
+| 過去1年    |       `1` | 毎時0分の値、7日間または30日間移動平均 |
+
+選択できる計測リソースは次の3種類です。
+
+- 気温: `℃`
+- 湿度: `%`
+- 気圧: `hPa`
+
+横軸の表示形式:
+
+- 過去24時間: `H時`
+- 過去7日: `MM/dd H時`
+- 過去1ヶ月、過去3ヶ月、過去1年: `MM/dd`
+
+### 現在値
+
+グラフ下部に、センサーから取得した現在の次の値を表示します。
+
+- 気温
+- 湿度
+- 気圧
+
+現在値は初回表示時に取得し、その後10分ごとに更新します。画面幅が狭い場合も、3項目を1行に収めて表示します。
+
+### 未実装機能
+
+- 複数リソースや期間の比較表示
+
+## ソース構成
+
+レイヤードアーキテクチャーを採用しています。
+
+```text
+src/app/
+  app.ts                         プレゼンテーション層
+  app.html                       画面テンプレート
+  application/
+    history.facade.ts            アプリケーション層
+  infrastructure/
+    history-api.service.ts       インフラストラクチャー層
+  models/
+    history.model.ts             API・画面で共有するモデル
+  utils/
+    moving-average.ts            移動平均のドメインロジック
+```
+
+- `App`: 画面状態とテンプレートを接続します。
+- `HistoryFacade`: 履歴取得、現在値取得、定期更新、グラフデータ変換を管理します。
+- `HistoryApiService`: HTTP通信とAPIエンドポイントを担当します。
+- `models`: APIレスポンスと画面設定の型を定義します。
+
+## 開発環境
+
+Dev Containerを利用する場合は、`.devcontainer/devcontainer.json` に次のホスト名解決設定があります。
+
+- `env-monitor.local` -> `192.168.100.105`
+- `env-measure.local` -> `192.168.100.232`
+
+ホスト側のIPアドレスを変更した場合は、`devcontainer.json` の `runArgs` も更新し、Dev Containerを再ビルドしてください。
+
+## 開発コマンド
+
+### 依存パッケージのインストール
+
+```bash
+npm install
+```
+
+### 開発サーバーの起動
 
 ```bash
 npm start
 ```
 
-`http://localhost:4200/` で確認できます。ソースファイル変更時は自動的にリロードされます。
-`env-monitor.local` へのAPIアクセスは [proxy.conf.json](proxy.conf.json) 経由でプロキシされます。
-
-### コード生成
-
-```bash
-ng generate component component-name
-```
-
-利用可能なスキーマティクス一覧は `ng generate --help` を参照。
+起動後、`http://localhost:4200/` を開きます。ソースコードの変更は自動的に反映されます。
 
 ### ビルド
 
@@ -79,15 +142,15 @@ ng generate component component-name
 npm run build
 ```
 
-`dist/` ディレクトリに成果物を出力します。
+成果物は `dist/env-viewer` に出力されます。
 
-### env-monitor.local への配置用ビルド
+### 配置用ビルド
 
 ```bash
 npm run publish
 ```
 
-`ng build --base-href=/ --deploy-url=/` を実行し、配置先サーバーのルート直下に配置できる形式で出力します。
+ルートパス配信用の `base-href` と `deploy-url` を指定してビルドします。
 
 ### テスト
 
@@ -95,8 +158,16 @@ npm run publish
 npm test
 ```
 
-[Vitest](https://vitest.dev/) を使用します。
+単発で実行する場合:
 
-### Angular CLI 参考資料
+```bash
+npm test -- --watch=false
+```
 
-詳細は [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) を参照してください。
+## 参考資料
+
+- [Angular CLI](https://angular.dev/tools/cli)
+- [Angular](https://angular.dev/)
+- [Chart.js](https://www.chartjs.org/)
+- [ng2-charts](https://github.com/valor-software/ng2-charts)
+- [環境モニターサーバー仕様](https://github.com/kattoshi/env-logger/blob/main/readme.md)

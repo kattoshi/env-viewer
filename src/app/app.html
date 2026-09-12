@@ -54,4 +54,29 @@
   <section class="chart-container">
     <canvas baseChart [type]="'line'" [data]="chartData()" [options]="chartOptions()"></canvas>
   </section>
+
+  <section class="current-values" aria-label="現在の環境値">
+    <h2>現在値</h2>
+    @if (currentLoading() && !currentValue()) {
+      <p class="status">現在値を読み込み中...</p>
+    } @else if (currentValue(); as current) {
+      <dl>
+        <div class="current-value">
+          <dt>気温</dt>
+          <dd>{{ current.temp | number: '1.1-1' }} <span>℃</span></dd>
+        </div>
+        <div class="current-value">
+          <dt>湿度</dt>
+          <dd>{{ current.humidity | number: '1.1-1' }} <span>%</span></dd>
+        </div>
+        <div class="current-value">
+          <dt>気圧</dt>
+          <dd>{{ current.pressure | number: '1.1-1' }} <span>hPa</span></dd>
+        </div>
+      </dl>
+    }
+    @if (currentError()) {
+      <p class="status error">{{ currentError() }}</p>
+    }
+  </section>
 </main>
