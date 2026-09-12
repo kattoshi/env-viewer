@@ -28,10 +28,10 @@ GET /api/history?start={開始日時}&end={終了日時}&mode={モード}
 
 ### 現在値API
 
-現在値は環境計測端末の `/current` を利用します。
+現在値は環境モニターサーバーの `/api/current` を利用します。
 
 ```text
-GET /current
+GET /api/current
 ```
 
 レスポンス形式:
@@ -45,7 +45,7 @@ GET /current
 }
 ```
 
-開発時は、Angularの開発サーバーから `http://env-measure.local` へプロキシします。
+開発時は、Angularの開発サーバーから `http://env-monitor.local` へプロキシします。
 プロキシ設定は [proxy.conf.json](proxy.conf.json) にあります。
 
 ## 画面仕様

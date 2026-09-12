@@ -30,6 +30,6 @@ export class HistoryApiService {
    * @returns 現在の気温、気圧、湿度を含むレスポンスを通知するObservable。
    */
   getCurrent(): Observable<CurrentValue> {
-    return this.http.get<CurrentValue>('/current');
+    return this.http.get<CurrentValue>(`${this.baseUrl}/current`);
   }
 }
